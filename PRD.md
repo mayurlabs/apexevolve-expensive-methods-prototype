@@ -1,5 +1,9 @@
 # PRD: ApexEvolve Integration with Expensive Methods (Phase 1 Pilot)
 
+> **Access the Prototype:** [Live Demo](https://mayurlabs.github.io/apexevolve-expensive-methods-prototype/)
+>
+> **GitHub Repository:** [mayurlabs/apexevolve-expensive-methods-prototype](https://github.com/mayurlabs/apexevolve-expensive-methods-prototype)
+
 ---
 
 ## 1. Overview
