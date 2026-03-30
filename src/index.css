@@ -1,0 +1,143 @@
+@import "tailwindcss";
+
+@theme {
+  --color-sf-blue: #0070d2;
+  --color-sf-blue-dark: #005fb2;
+  --color-sf-blue-light: #1b96ff;
+  --color-sf-nav: #032d60;
+  --color-sf-nav-hover: #014486;
+  --color-sf-header: #f3f3f3;
+  --color-sf-page-bg: #f4f6f9;
+  --color-sf-card: #ffffff;
+  --color-sf-border: #dddbda;
+  --color-sf-text: #080707;
+  --color-sf-text-secondary: #706e6b;
+  --color-sf-success: #2e844a;
+  --color-sf-warning: #fe9339;
+  --color-sf-error: #c23934;
+  --color-sf-info: #0070d2;
+  --color-sf-tab-active: #0070d2;
+  --color-sf-tab-bg: #f3f3f3;
+  --color-evolve-primary: #0070d2;
+  --color-evolve-accent: #1b96ff;
+  --color-evolve-gradient-start: #0070d2;
+  --color-evolve-gradient-end: #00a1e0;
+  --color-score-high: #2e844a;
+  --color-score-medium: #fe9339;
+  --color-score-low: #c23934;
+
+  --font-sf: 'Salesforce Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+@layer base {
+  body {
+    font-family: var(--font-sf);
+    background: var(--color-sf-page-bg);
+    color: var(--color-sf-text);
+    margin: 0;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+/* SLDS-standard button styles */
+.slds-button-outline-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 16px;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.25;
+  color: #0070d2;
+  background-color: #ffffff;
+  border: 1px solid #0070d2;
+  border-radius: 4px;
+  text-decoration: none;
+  transition: background-color 0.1s, border-color 0.1s;
+}
+.slds-button-outline-brand:hover {
+  background-color: #f3f3f3;
+  border-color: #005fb2;
+  color: #005fb2;
+}
+.slds-button-outline-brand:active {
+  background-color: #eef1f6;
+}
+
+.slds-button-neutral {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 16px;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.25;
+  color: #0070d2;
+  background-color: #ffffff;
+  border: 1px solid #dddbda;
+  border-radius: 4px;
+  text-decoration: none;
+  transition: background-color 0.1s, border-color 0.1s;
+}
+.slds-button-neutral:hover {
+  background-color: #f3f3f3;
+  border-color: #c9c7c5;
+}
+
+.sf-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+.sf-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.sf-scrollbar::-webkit-scrollbar-thumb {
+  background: #c9c7c5;
+  border-radius: 3px;
+}
+
+@keyframes slideInRight {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+@keyframes slideOutRight {
+  from { transform: translateX(0); opacity: 1; }
+  to { transform: translateX(100%); opacity: 0; }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+@keyframes progress-bar {
+  0% { width: 0%; }
+  100% { width: 100%; }
+}
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-slide-in-right {
+  animation: slideInRight 0.3s ease-out forwards;
+}
+.animate-fade-in {
+  animation: fadeIn 0.2s ease-out forwards;
+}
+.animate-fade-in-up {
+  animation: fadeInUp 0.35s ease-out forwards;
+}
+.animate-pulse-dot {
+  animation: pulse-dot 1.5s ease-in-out infinite;
+}
+.shimmer-bg {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
