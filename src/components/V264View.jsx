@@ -81,8 +81,10 @@ function V264PageHeader() {
     );
   };
 
+  // pb-1 (not py-5) so the NEW callout banner below sits visually close to the trust banner
+  // without a big gap from V264PageHeader's bottom padding.
   return (
-    <div className="px-6 py-5">
+    <div className="px-6 pt-5 pb-1">
       {/* Title row */}
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-[20px] font-bold text-sf-text">ApexGuru Insights</h1>
@@ -135,9 +137,8 @@ function V264PageHeader() {
         </div>
       </div>
 
-      {/* Standard trust banner (unchanged from real Setup).
-          mb-2 (8px) instead of mb-4 so the ApexEvolve NEW banner below sits visually close. */}
-      <div className="bg-blue-50 border border-blue-100 rounded-lg px-4 py-3 mb-2 flex items-start gap-2">
+      {/* Standard trust banner (unchanged from real Setup) */}
+      <div className="bg-blue-50 border border-blue-100 rounded-lg px-4 py-3 mb-4 flex items-start gap-2">
         <Info className="w-4 h-4 text-sf-blue mt-0.5 flex-shrink-0" />
         <div>
           <p className="text-[12px] text-sf-text leading-relaxed">
@@ -734,9 +735,11 @@ function V264NewCallout() {
     dispatch({ type: 'SET_TAB', payload: 'expensive' });
   };
 
-  // pt-2 (8px) instead of pt-4 so the NEW banner sits right under the trust banner
+  // Symmetric vertical padding — the NEW banner sits evenly between the trust banner above
+  // (V264PageHeader has pb-1, trust banner has mb-4 — together ≈20px above) and the tab bar
+  // below (tab buttons have py-3, total ≈16px below). Matching with pt-1 pb-4 here.
   return (
-    <div className="px-6 pt-2 pb-1">
+    <div className="px-6 pt-1 pb-4">
       <div className="bg-gradient-to-r from-[#032d60] to-[#0070d2] rounded-lg px-4 py-3 text-white shadow-md flex items-start gap-3 animate-fade-in-up">
         <div className="w-9 h-9 rounded-lg bg-white/15 flex items-center justify-center flex-shrink-0">
           <Sparkles className="w-5 h-5 text-yellow-300" />
