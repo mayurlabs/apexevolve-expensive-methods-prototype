@@ -6,10 +6,14 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:soma": "VITE_BASE_PATH=/pages/mayuresh-verma/apexevolve-v264-pilot/ vite build",
+    "build:public": "VITE_BASE_PATH=/apexevolve-expensive-methods-prototype/ vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },
   "dependencies": {
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.7",
     "lucide-react": "^1.7.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",

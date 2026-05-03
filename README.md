@@ -37,9 +37,30 @@ Then open `http://localhost:5173/apexevolve-expensive-methods-prototype/` (Vite 
 | Command | Purpose |
 |---|---|
 | `npm run dev` | Local dev server with HMR |
-| `npm run build` | Production build into `dist/` |
+| `npm run build` | Production build into `dist/` (uses default base path) |
+| `npm run build:soma` | Build for git.soma Pages (`/pages/mayuresh-verma/apexevolve-v264-pilot/`) |
+| `npm run build:public` | Build for public GitHub Pages (`/apexevolve-expensive-methods-prototype/`) |
 | `npm run preview` | Preview a production build locally |
 | `npm run lint` | ESLint pass |
+
+### Redeploying the live demo (PM workflow)
+
+After pushing source changes to `main`, deploy the built site to the `gh-pages` branch:
+
+```bash
+# Build with the correct base path for the target
+npm run build:soma
+
+# Deploy to git.soma Pages (use a fresh clone to avoid worktree conflicts)
+cd /tmp && rm -rf apexevolve-ghpages && \
+  git clone -b gh-pages https://git.soma.salesforce.com/mayuresh-verma/apexevolve-v264-pilot.git apexevolve-ghpages
+cd apexevolve-ghpages
+find . -mindepth 1 -not -path './.git*' -delete
+cp -R <path-to-prototype>/dist/* .
+git add -A && git commit -m "Redeploy V264" && git push origin gh-pages
+```
+
+git.soma Pages rebuilds in ~30-60 seconds after push.
 
 ---
 
