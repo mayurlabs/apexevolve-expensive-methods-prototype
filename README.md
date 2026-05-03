@@ -66,16 +66,17 @@ git.soma Pages rebuilds in ~30-60 seconds after push.
 
 ## Demo flow for reviewers
 
-1. **Land on 264 Version (default)** — see the page-level "NEW" callout banner above the tabs and the action bar at the top of Expensive Methods
-2. **Click "Optimize All Recommended Methods with ApexEvolve"** (5 methods auto-selected)
-3. **Confirmation modal** — ETA (static, ~10 min shown as a bar), 6 customer-facing caveats sourced from #apex-evolve
-4. **Click Start** → 15-second demo run (real product ETA is ~10 min)
-5. **"Ready" state** → recommendations section appears above the method list with collapsible cards
-6. **Expand a card** — default tab is **Code comparison**, then **Scores**, then **Why this change** (the Proof Panel with verdict + dot-rated dimensions + before-you-apply caveats)
-7. **Click "View full analysis"** — opens a modal with the full markdown rationale (Apex-specific, governor-limit-aware, modelled on Wenzhuo's real CodeEvolve output)
-8. **Click "Download PDF"** at the top right — consolidated PDF with Proof Panel + Scores + Code + Full Analysis per method
-9. **Refresh the page** — recommendations persist via localStorage (30-day TTL) and the "Optimized MMM DD" chip appears on the list rows
-10. **Click "Re-evolve" on any existing card** — opens the confirmation modal with amber context banner explaining the refresh
+1. **Land on 264 Version (default)** — you'll start on the **Code Recommendations** tab. The page-level "NEW — ApexEvolve is here" callout sits above the tab bar with a clickable **"See it in Expensive Methods →"** link. This mirrors the real-world case where a user is viewing Code Recs when the callout first appears.
+2. **Click "See it in Expensive Methods →"** in the callout — the active tab switches to Expensive Methods and the callout now reads **"Try it below on any expensive method."** You're now on the Expensive Methods tab with the callout still visible (until dismissed).
+3. **Click "Optimize All Recommended Methods with ApexEvolve"** (5 methods auto-selected)
+4. **Confirmation modal** — ETA (static, ~10 min shown as a bar), 6 customer-facing caveats sourced from #apex-evolve
+5. **Click Start** → 15-second demo run (real product ETA is ~10 min)
+6. **"Ready" state** → recommendations section appears above the method list with collapsible cards
+7. **Expand a card** — default tab is **Code comparison**, then **Scores**, then **Why this change** (the Proof Panel with verdict + dot-rated dimensions + before-you-apply caveats)
+8. **Click "View full analysis"** — opens a modal with the full markdown rationale (Apex-specific, governor-limit-aware, modelled on Wenzhuo's real CodeEvolve output)
+9. **Click "Download PDF"** at the top right — consolidated PDF with Proof Panel + Scores + Code + Full Analysis per method
+10. **Refresh the page** — recommendations persist via localStorage (30-day TTL) and the "Optimized MMM DD" chip appears on the list rows
+11. **Click "Re-evolve" on any existing card** — opens the confirmation modal with amber context banner explaining the refresh
 
 ---
 

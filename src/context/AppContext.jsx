@@ -61,7 +61,13 @@ const initialState = {
   scenario: 'a', // 'a' = Salesforce-managed, 'b' = Customer-connected
 
   selectedMethods: [],
-  activeTab: 'expensive',
+  // Default landing tab is 'code' (Code Recommendations) so a first-time user
+  // witnesses Scenario 1.2 — the page-level ApexEvolve NEW callout renders with a
+  // "See it in Expensive Methods →" CTA that switches to the Expensive Methods tab.
+  // If we defaulted to 'expensive' the CTA variant of the banner would never render
+  // on a natural demo walkthrough. (The A/B legacy view still opens on Expensive
+  // Methods because nothing else routes there via SET_TAB at mount.)
+  activeTab: 'code',
   configuredEnvironment: null,
   jobs: [],
   showModal: false,
