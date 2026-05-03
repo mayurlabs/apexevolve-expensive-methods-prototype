@@ -8,7 +8,13 @@ import JobTracker from './components/JobTracker';
 import ResultsPanel from './components/ResultsPanel';
 import FullReport from './components/FullReport';
 import ToastContainer from './components/Toast';
+import V264View from './components/V264View';
 import { ThumbsUp, ThumbsDown, ChevronDown } from 'lucide-react';
+
+// ————————————————————————————————————————————————————————————————
+// A/B demo view — preserved exactly as-is. This is the north-star demo for Scenarios A + B
+// (Salesforce-managed vs. customer-connected environment). Do NOT modify this view when working
+// on V264 — the two views are routed independently via `state.view`.
 
 function PageHeader() {
   const { state, addToast } = useApp();
@@ -134,26 +140,38 @@ function OtherTabContent({ tabName }) {
   );
 }
 
+// The original A/B demo view, pulled out into its own wrapper so we can branch on `state.view`.
+function ScenarioABView() {
+  const { state } = useApp();
+  return (
+    <>
+      <div className="min-h-screen">
+        <PageHeader />
+        <TabBar />
+        {state.activeTab === 'expensive' ? (
+          <ExpensiveMethodsContent />
+        ) : (
+          <OtherTabContent tabName={state.activeTab} />
+        )}
+      </div>
+      <BulkActionBar />
+      <OptimizationModal />
+      <ResultsPanel />
+      <FullReport />
+    </>
+  );
+}
+
 function AppContent() {
   const { state } = useApp();
+  // Route: V264 is the lean pilot build; 'a'/'b' are the original north-star demo.
+  const showV264 = state.view === 'v264';
 
   return (
     <>
       <Layout>
-        <div className="min-h-screen">
-          <PageHeader />
-          <TabBar />
-          {state.activeTab === 'expensive' ? (
-            <ExpensiveMethodsContent />
-          ) : (
-            <OtherTabContent tabName={state.activeTab} />
-          )}
-        </div>
-        <BulkActionBar />
+        {showV264 ? <V264View /> : <ScenarioABView />}
       </Layout>
-      <OptimizationModal />
-      <ResultsPanel />
-      <FullReport />
       <ToastContainer />
     </>
   );

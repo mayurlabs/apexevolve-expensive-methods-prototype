@@ -1,0 +1,26 @@
+# ApexEvolve V264 Pilot — CODEOWNERS
+#
+# All PRs route to the PM (Mayuresh) for final approval. Engineering leads are
+# listed below for subject-matter review — please tag them if your change touches
+# their area. This file follows GitHub Enterprise CODEOWNERS syntax.
+
+# Default — everything needs PM review
+*               @mayuresh-verma
+
+# Prototype UX surfaces — PM primary; eng feedback welcome on interaction patterns
+/src/components/        @mayuresh-verma @samarth-arora
+/src/App.jsx            @mayuresh-verma @samarth-arora
+
+# Optimization rationale narratives — co-reviewed with CodeEvolve owner (Wenzhuo)
+# because these mirror real CodeEvolve backend `report.md` output format.
+/src/data/optimizationReports.js   @mayuresh-verma @wenzhuo-yang
+
+# State + persistence model — eng-heavy area; tag Samarth + Manpreet for review
+/src/context/           @mayuresh-verma @samarth-arora @manpreet-singh
+
+# PDF generator
+/src/utils/             @mayuresh-verma @samarth-arora
+
+# PRD, README, ScenarioMatrix — PM owns
+/PRD.md         @mayuresh-verma
+/README.md      @mayuresh-verma
