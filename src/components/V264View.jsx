@@ -255,76 +255,90 @@ function V264StatusBar() {
 // Method list — replicates the real Setup "numbered rows" pattern with checkboxes added.
 // Intentionally minimal — no hover-reveal per-row actions (those were in the A/B demo).
 
+// De-duplication rule (per Mayuresh, 2026-05-04):
+//   Once a method is optimized (has a persisted recommendation OR just completed in the
+//   current run), it lives ONLY in the ApexEvolve Recommendations card above — NOT duplicated
+//   as a row in the Critical / Expensive Methods list. This avoids the "two places, one method"
+//   confusion that reviewers flagged.
+//
+// The group header retains the original total count and exposes how many are already
+// addressed via ApexEvolve ("N total · M optimized ↑") so the user keeps context on what
+// ApexGuru originally surfaced vs. what's been handled.
 function V264MethodGroup({ title, methods, icon: Icon, iconColor, startIndex }) {
   const { state, dispatch } = useApp();
   const runActive = state.v264.run?.status === 'in-progress';
-  // A method is "optimized" in the UI sense if it has EITHER just completed in the current run
-  // OR has a persisted recommendation from a previous session. Both surface the green chip.
   const currentRunOptimized = new Set(
     state.v264.run?.status === 'ready' ? state.v264.run.methodIds : []
   );
   const persistedMap = state.v264.persistedRecommendations;
+
+  const isMethodOptimized = (m) =>
+    currentRunOptimized.has(m.id) || !!persistedMap[m.id];
+
+  const visibleMethods = methods.filter((m) => !isMethodOptimized(m));
+  const optimizedCount = methods.length - visibleMethods.length;
+  const totalCount = methods.length;
+
+  // Edge case — entire group is already optimized. Still render the header so the reviewer
+  // sees the group exists + status; skip the empty row list.
+  const allOptimized = visibleMethods.length === 0 && totalCount > 0;
 
   return (
     <div className="mb-5">
       <div className="flex items-center gap-2 px-4 py-2.5 bg-gray-50 border-b border-gray-200">
         <Icon className={`w-4 h-4 ${iconColor}`} />
         <h3 className="text-[13px] font-semibold text-sf-text">{title}</h3>
-        <span className="text-[12px] text-sf-text-secondary">({methods.length})</span>
+        <span className="text-[12px] text-sf-text-secondary">({totalCount})</span>
+        {optimizedCount > 0 && (
+          <span
+            className="inline-flex items-center gap-1 ml-1 px-2 py-0.5 rounded-full bg-green-50 border border-green-200 text-[10px] font-medium text-sf-success"
+            title={`${optimizedCount} method${optimizedCount > 1 ? 's have' : ' has'} an ApexEvolve recommendation in the section above`}
+          >
+            <CheckCircle2 className="w-3 h-3" />
+            {optimizedCount} optimized — see above
+          </span>
+        )}
       </div>
-      <div>
-        {methods.map((m, i) => {
-          const idx = startIndex + i + 1;
-          const isSelected = state.selectedMethods.includes(m.id);
-          const persistedEntry = persistedMap[m.id];
-          const isOptimized = currentRunOptimized.has(m.id) || !!persistedEntry;
-          const wouldExceed =
-            !isSelected && state.selectedMethods.length >= MAX_METHODS_PER_RUN;
-
-          // Format persistence date for the chip tooltip / hover.
-          let optimizedLabel = 'Optimized';
-          if (persistedEntry?.optimizedAt) {
-            const d = new Date(persistedEntry.optimizedAt);
-            optimizedLabel = `Optimized ${d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
-          }
-
-          return (
-            <div
-              key={m.id}
-              className={`flex items-center gap-3 px-4 py-2.5 border-b border-gray-100 transition-colors ${
-                isSelected ? 'bg-blue-50/60' : 'hover:bg-gray-50'
-              }`}
-            >
-              <input
-                type="checkbox"
-                checked={isSelected}
-                disabled={runActive || wouldExceed}
-                onChange={() => dispatch({ type: 'TOGGLE_METHOD', payload: m.id })}
-                className="w-4 h-4 rounded border-sf-border text-sf-blue focus:ring-sf-blue/30 cursor-pointer accent-sf-blue disabled:cursor-not-allowed disabled:opacity-50"
-                title={wouldExceed ? `You can select up to ${MAX_METHODS_PER_RUN} methods per run` : ''}
-              />
-              <span className="text-[13px] text-sf-text-secondary w-6 text-right">{idx}.</span>
-              <code className="text-[12px] text-sf-text font-mono flex-1 truncate">
-                {m.name}{m.signature ? `_${m.signature}` : ''}
-              </code>
-              {isOptimized && (
-                <span
-                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-100 text-sf-success text-[10px] font-semibold"
-                  title={persistedEntry ? 'This recommendation is cached for 30 days from the optimization date.' : ''}
-                >
-                  <CheckCircle2 className="w-3 h-3" />
-                  {optimizedLabel}
-                </span>
-              )}
-              {m.recommended && !isOptimized && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-[10px] font-medium border border-amber-200">
-                  Recommended
-                </span>
-              )}
-            </div>
-          );
-        })}
-      </div>
+      {allOptimized ? (
+        <div className="px-4 py-3 text-[12px] text-sf-text-secondary italic">
+          All methods in this group have ApexEvolve recommendations above.
+        </div>
+      ) : (
+        <div>
+          {visibleMethods.map((m, i) => {
+            const idx = startIndex + i + 1;
+            const isSelected = state.selectedMethods.includes(m.id);
+            const wouldExceed =
+              !isSelected && state.selectedMethods.length >= MAX_METHODS_PER_RUN;
+            return (
+              <div
+                key={m.id}
+                className={`flex items-center gap-3 px-4 py-2.5 border-b border-gray-100 transition-colors ${
+                  isSelected ? 'bg-blue-50/60' : 'hover:bg-gray-50'
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={isSelected}
+                  disabled={runActive || wouldExceed}
+                  onChange={() => dispatch({ type: 'TOGGLE_METHOD', payload: m.id })}
+                  className="w-4 h-4 rounded border-sf-border text-sf-blue focus:ring-sf-blue/30 cursor-pointer accent-sf-blue disabled:cursor-not-allowed disabled:opacity-50"
+                  title={wouldExceed ? `You can select up to ${MAX_METHODS_PER_RUN} methods per run` : ''}
+                />
+                <span className="text-[13px] text-sf-text-secondary w-6 text-right">{idx}.</span>
+                <code className="text-[12px] text-sf-text font-mono flex-1 truncate">
+                  {m.name}{m.signature ? `_${m.signature}` : ''}
+                </code>
+                {m.recommended && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-[10px] font-medium border border-amber-200">
+                    Recommended
+                  </span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -891,25 +905,43 @@ function V264ExpensiveMethodsBody() {
 
       <V264RecommendationsSection />
 
-      <div className="px-6 py-4">
-        <div className="bg-white rounded-lg border border-sf-border shadow-sm">
-          <V264MethodGroup
-            title="Critical Expensive Methods"
-            methods={CRITICAL_METHODS}
-            icon={AlertOctagon}
-            iconColor="text-sf-error"
-            startIndex={0}
-          />
-          <V264MethodGroup
-            title="Expensive Methods"
-            methods={EXPENSIVE_METHODS}
-            icon={AlertTriangle}
-            iconColor="text-sf-warning"
-            startIndex={CRITICAL_METHODS.length}
-          />
-        </div>
-      </div>
+      <V264MethodLists />
     </>
+  );
+}
+
+// Wrapper that computes startIndex per-group based on how many methods are actually
+// visible (unoptimized) in the preceding group — not the full total. This keeps the
+// row numbering sequential without gaps after we filter out optimized methods.
+function V264MethodLists() {
+  const { state } = useApp();
+  const currentRunOptimized = new Set(
+    state.v264.run?.status === 'ready' ? state.v264.run.methodIds : []
+  );
+  const persistedMap = state.v264.persistedRecommendations;
+  const isOpt = (m) => currentRunOptimized.has(m.id) || !!persistedMap[m.id];
+
+  const visibleCritical = CRITICAL_METHODS.filter((m) => !isOpt(m));
+
+  return (
+    <div className="px-6 py-4">
+      <div className="bg-white rounded-lg border border-sf-border shadow-sm">
+        <V264MethodGroup
+          title="Critical Expensive Methods"
+          methods={CRITICAL_METHODS}
+          icon={AlertOctagon}
+          iconColor="text-sf-error"
+          startIndex={0}
+        />
+        <V264MethodGroup
+          title="Expensive Methods"
+          methods={EXPENSIVE_METHODS}
+          icon={AlertTriangle}
+          iconColor="text-sf-warning"
+          startIndex={visibleCritical.length}
+        />
+      </div>
+    </div>
   );
 }
 
