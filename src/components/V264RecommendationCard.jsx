@@ -311,76 +311,120 @@ function RetentionStamp({ persistedEntry }) {
 
 // ────────────────────────────────────────────────────────────────────
 // Main card
+//
+// Rendered INLINE inside a V264MethodGroup row list (May 4, 2026 redesign). The
+// collapsed state matches the visual weight of sibling regular method rows — single
+// compact line with the row number, "ApexEvolve Optimized" badge, method name, and
+// summary pills. Expanded state opens the metadata strip + sub-tabs + tab content
+// below the row. Accordion enforced via state.v264.expandedRecommendationId.
+//
+// The optimized method stays in its ORIGINAL tier (Critical / Expensive) at its
+// ORIGINAL position in the list — it is not moved to a separate section. Rationale:
+// reviewers should still recognize "these are my critically expensive methods" as
+// the primary frame; ApexEvolve is additive insight on a specific method, not a
+// separate category.
 
-export default function V264RecommendationCard({ methodId, isExpanded, onToggle, activeTab, onTabChange }) {
+export default function V264RecommendationCard({
+  methodId,
+  isExpanded,
+  onToggle,
+  activeTab,
+  onTabChange,
+  rowNumber,   // optional — shown in the row-number slot when rendered inline in a list
+}) {
   const { state, dispatch } = useApp();
   const method = ALL_METHODS.find((m) => m.id === methodId);
   if (!method) return null;
   const report = getReportForMethod(methodId);
   const persistedEntry = state.v264.persistedRecommendations[methodId];
 
-  // Per-card PDF download was removed in favor of a single consolidated "Download PDF" at
-  // the top of the page — matches the existing ApexGuru pattern (one entry point) and gives
-  // the customer one shareable artifact to hand off to a developer rather than N separate files.
-
   const onReEvolve = (e) => {
     e.stopPropagation();
     dispatch({ type: 'V264_REQUEST_RE_EVOLVE', payload: methodId });
   };
 
+  // Collapsed row is a single compact line mirroring the sibling regular-method row
+  // padding (py-2.5) so the two visually align in the list. Expanded state adds a
+  // left-accent color to tie the expanded body to the row above.
   return (
-    <div className={`border border-sf-border rounded-lg overflow-hidden transition-shadow ${isExpanded ? 'shadow-md' : 'shadow-sm hover:shadow'} bg-white mb-3`}>
-      {/* Clickable header row — always visible */}
+    <div className={`border-b border-gray-100 ${isExpanded ? 'bg-blue-50/30 border-l-2 border-l-sf-blue' : 'hover:bg-blue-50/20'} transition-colors`}>
+      {/* Header row — matches the regular row layout (gap-3 px-4 py-2.5) so numbering
+          and indent stay aligned with unoptimized rows above/below */}
       <button
         onClick={onToggle}
-        className="w-full text-left px-4 py-3 flex items-start gap-3 hover:bg-blue-50/30 transition-colors cursor-pointer"
+        className="w-full text-left px-4 py-2.5 flex items-center gap-3 cursor-pointer"
       >
-        <div className="mt-0.5">
-          {isExpanded ? <ChevronDown className="w-4 h-4 text-sf-text-secondary" /> : <ChevronRight className="w-4 h-4 text-sf-text-secondary" />}
+        {/* Caret slot replaces the checkbox slot of a regular row — same width */}
+        <div className="w-4 h-4 flex items-center justify-center flex-shrink-0">
+          {isExpanded
+            ? <ChevronDown className="w-3.5 h-3.5 text-sf-blue" />
+            : <ChevronRight className="w-3.5 h-3.5 text-sf-text-secondary" />}
         </div>
 
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-green-100 text-sf-success text-[10px] font-semibold uppercase tracking-wide">
-              <Sparkles className="w-2.5 h-2.5" />
-              ApexEvolve Optimized
-            </span>
-            <code className="text-[13px] font-mono text-sf-text truncate">{method.name}</code>
+        {/* Row number — matches sibling regular row */}
+        <span className="text-[13px] text-sf-text-secondary w-6 text-right flex-shrink-0">
+          {rowNumber != null ? `${rowNumber}.` : ''}
+        </span>
+
+        {/* ApexEvolve badge — identifies this row as an optimization surface */}
+        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-green-100 text-sf-success text-[10px] font-semibold uppercase tracking-wide flex-shrink-0">
+          <Sparkles className="w-2.5 h-2.5" />
+          ApexEvolve Optimized
+        </span>
+
+        {/* Method name */}
+        <code className="text-[12px] font-mono text-sf-text truncate flex-1 min-w-0">
+          {method.name}{method.signature ? `_${method.signature}` : ''}
+        </code>
+
+        {/* Condensed summary — pills + combined score delta. Hidden on very narrow widths
+            to preserve method-name legibility. */}
+        <div className="hidden xl:flex items-center gap-2 flex-shrink-0">
+          <ImprovementPills summary={report.summary} />
+          <div className="flex items-center gap-1 text-[11px] text-sf-text-secondary">
+            <BarChart3 className="w-3 h-3" />
+            <span className="font-mono text-sf-text">{report.scores.combined[0].toFixed(2)}</span>
+            <ChevronRight className="w-3 h-3" />
+            <span className="font-mono text-sf-success font-semibold">{report.scores.combined[1].toFixed(2)}</span>
           </div>
-
-          <p className="text-[12px] text-sf-text-secondary leading-relaxed mb-2 line-clamp-2">
-            {report.verdict}
-          </p>
-
-          <div className="flex items-center gap-3 flex-wrap">
-            <ImprovementPills summary={report.summary} />
-            <div className="flex items-center gap-1 text-[11px] text-sf-text-secondary">
-              <BarChart3 className="w-3 h-3" />
-              Combined: <span className="font-mono text-sf-text">{report.scores.combined[0].toFixed(2)}</span>
-              <ChevronRight className="w-3 h-3" />
-              <span className="font-mono text-sf-success font-semibold">{report.scores.combined[1].toFixed(2)}</span>
-            </div>
-            <RetentionStamp persistedEntry={persistedEntry} />
-          </div>
         </div>
 
-        <div className="flex items-center gap-1 flex-shrink-0">
-          {persistedEntry && (
-            <button
-              onClick={onReEvolve}
-              className="inline-flex items-center gap-1 px-2.5 py-1 border border-sf-border rounded text-[11px] text-sf-text-secondary hover:text-sf-blue hover:border-sf-blue hover:bg-blue-50 transition-colors cursor-pointer"
-              title="Re-run ApexEvolve for this method"
-            >
-              <RefreshCw className="w-3 h-3" />
-              Re-evolve
-            </button>
-          )}
-        </div>
+        {/* Re-evolve — always visible so user can refresh without expanding */}
+        {persistedEntry && (
+          <button
+            onClick={onReEvolve}
+            className="inline-flex items-center gap-1 px-2 py-1 border border-sf-border rounded text-[11px] text-sf-text-secondary hover:text-sf-blue hover:border-sf-blue hover:bg-blue-50 transition-colors cursor-pointer flex-shrink-0"
+            title="Re-run ApexEvolve for this method"
+          >
+            <RefreshCw className="w-3 h-3" />
+            Re-evolve
+          </button>
+        )}
       </button>
 
-      {/* Expanded body — metadata strip + sub-tabs + tab content */}
+      {/* Expanded body — verdict banner + metadata strip + sub-tabs + tab content */}
       {isExpanded && (
-        <>
+        <div className="border-t border-sf-border bg-white">
+          {/* Verdict banner — one-line summary of what ApexEvolve found + pills + stamp.
+              Moved here (out of the collapsed row) so the row stays single-line but the
+              expanded view still shows the "why this matters" hook prominently. */}
+          <div className="px-5 py-3 bg-green-50/50 border-b border-green-100">
+            <p className="text-[12.5px] text-sf-text leading-relaxed mb-2">
+              {report.verdict}
+            </p>
+            <div className="flex items-center gap-3 flex-wrap">
+              {/* Show pills here on narrow viewports where the collapsed row hid them */}
+              <div className="xl:hidden"><ImprovementPills summary={report.summary} /></div>
+              <div className="flex items-center gap-1 text-[11px] text-sf-text-secondary xl:hidden">
+                <BarChart3 className="w-3 h-3" />
+                Combined: <span className="font-mono text-sf-text">{report.scores.combined[0].toFixed(2)}</span>
+                <ChevronRight className="w-3 h-3" />
+                <span className="font-mono text-sf-success font-semibold">{report.scores.combined[1].toFixed(2)}</span>
+              </div>
+              <RetentionStamp persistedEntry={persistedEntry} />
+            </div>
+          </div>
+
           <MethodMetadata method={method} />
 
           <div className="border-b border-sf-border bg-gray-50 px-5 flex items-center gap-0">
@@ -407,7 +451,7 @@ export default function V264RecommendationCard({ methodId, isExpanded, onToggle,
           {activeTab === 'code' && <CodeTab report={report} />}
           {activeTab === 'scores' && <ScoresTab report={report} />}
           {activeTab === 'why' && <ProofPanel methodId={methodId} report={report} />}
-        </>
+        </div>
       )}
     </div>
   );

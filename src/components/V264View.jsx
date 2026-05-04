@@ -14,7 +14,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   ThumbsUp, ThumbsDown, ChevronDown, AlertOctagon, AlertTriangle, Sparkles,
-  X, Clock, CheckCircle2, Info, Zap, Lightbulb,
+  X, Clock, CheckCircle2, Info, Zap,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { CRITICAL_METHODS, EXPENSIVE_METHODS, ALL_METHODS } from '../data/methods';
@@ -255,15 +255,21 @@ function V264StatusBar() {
 // Method list — replicates the real Setup "numbered rows" pattern with checkboxes added.
 // Intentionally minimal — no hover-reveal per-row actions (those were in the A/B demo).
 
-// De-duplication rule (per Mayuresh, 2026-05-04):
-//   Once a method is optimized (has a persisted recommendation OR just completed in the
-//   current run), it lives ONLY in the ApexEvolve Recommendations card above — NOT duplicated
-//   as a row in the Critical / Expensive Methods list. This avoids the "two places, one method"
-//   confusion that reviewers flagged.
+// Method list group — renders one tier (Critical / Expensive) with ALL its methods in
+// ORIGINAL order. Optimized methods render as inline expandable V264RecommendationCard
+// rows occupying the same slot where their regular-method row would have been. This
+// preserves the user's "by tier" mental model: a critically expensive method stays in
+// the Critical group whether it's been ApexEvolve-optimized or not.
 //
-// The group header retains the original total count and exposes how many are already
-// addressed via ApexEvolve ("N total · M optimized ↑") so the user keeps context on what
-// ApexGuru originally surfaced vs. what's been handled.
+// Evolution of this design:
+//   v1 (May 3): separate "ApexEvolve Recommendations" section at the TOP + duplicate row
+//               with "Optimized" chip in the list → reviewers flagged duplication.
+//   v2 (May 4 am): kept the separate top section; filtered optimized methods out of list
+//               → Mayuresh: "keeps user context-switching between by-tier and by-status."
+//   v3 (May 4 pm, current): no separate top section. Optimized methods live inline in
+//               their original tier at their original position, rendered as expandable
+//               insight rows. Header shows: total count + "N ApexEvolve optimized" pill.
+
 function V264MethodGroup({ title, methods, icon: Icon, iconColor, startIndex }) {
   const { state, dispatch } = useApp();
   const runActive = state.v264.run?.status === 'in-progress';
@@ -275,13 +281,9 @@ function V264MethodGroup({ title, methods, icon: Icon, iconColor, startIndex }) 
   const isMethodOptimized = (m) =>
     currentRunOptimized.has(m.id) || !!persistedMap[m.id];
 
-  const visibleMethods = methods.filter((m) => !isMethodOptimized(m));
-  const optimizedCount = methods.length - visibleMethods.length;
+  const optimizedCount = methods.filter(isMethodOptimized).length;
   const totalCount = methods.length;
-
-  // Edge case — entire group is already optimized. Still render the header so the reviewer
-  // sees the group exists + status; skip the empty row list.
-  const allOptimized = visibleMethods.length === 0 && totalCount > 0;
+  const expandedId = state.v264.expandedRecommendationId;
 
   return (
     <div className="mb-5">
@@ -292,53 +294,68 @@ function V264MethodGroup({ title, methods, icon: Icon, iconColor, startIndex }) 
         {optimizedCount > 0 && (
           <span
             className="inline-flex items-center gap-1 ml-1 px-2 py-0.5 rounded-full bg-green-50 border border-green-200 text-[10px] font-medium text-sf-success"
-            title={`${optimizedCount} method${optimizedCount > 1 ? 's have' : ' has'} an ApexEvolve recommendation in the section above`}
+            title={`${optimizedCount} method${optimizedCount > 1 ? 's in this group have' : ' in this group has'} an ApexEvolve recommendation — expand the row inline to view`}
           >
-            <CheckCircle2 className="w-3 h-3" />
-            {optimizedCount} optimized — see above
+            <Sparkles className="w-3 h-3" />
+            {optimizedCount} ApexEvolve optimized
           </span>
         )}
       </div>
-      {allOptimized ? (
-        <div className="px-4 py-3 text-[12px] text-sf-text-secondary italic">
-          All methods in this group have ApexEvolve recommendations above.
-        </div>
-      ) : (
-        <div>
-          {visibleMethods.map((m, i) => {
-            const idx = startIndex + i + 1;
-            const isSelected = state.selectedMethods.includes(m.id);
-            const wouldExceed =
-              !isSelected && state.selectedMethods.length >= MAX_METHODS_PER_RUN;
+      <div>
+        {methods.map((m, i) => {
+          const idx = startIndex + i + 1;
+          const optimized = isMethodOptimized(m);
+
+          if (optimized) {
+            // Inline insight card — occupies the same list slot, stays in tier, at the
+            // same ordinal position it would have had as an unoptimized row.
             return (
-              <div
+              <V264RecommendationCard
                 key={m.id}
-                className={`flex items-center gap-3 px-4 py-2.5 border-b border-gray-100 transition-colors ${
-                  isSelected ? 'bg-blue-50/60' : 'hover:bg-gray-50'
-                }`}
-              >
-                <input
-                  type="checkbox"
-                  checked={isSelected}
-                  disabled={runActive || wouldExceed}
-                  onChange={() => dispatch({ type: 'TOGGLE_METHOD', payload: m.id })}
-                  className="w-4 h-4 rounded border-sf-border text-sf-blue focus:ring-sf-blue/30 cursor-pointer accent-sf-blue disabled:cursor-not-allowed disabled:opacity-50"
-                  title={wouldExceed ? `You can select up to ${MAX_METHODS_PER_RUN} methods per run` : ''}
-                />
-                <span className="text-[13px] text-sf-text-secondary w-6 text-right">{idx}.</span>
-                <code className="text-[12px] text-sf-text font-mono flex-1 truncate">
-                  {m.name}{m.signature ? `_${m.signature}` : ''}
-                </code>
-                {m.recommended && (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-[10px] font-medium border border-amber-200">
-                    Recommended
-                  </span>
-                )}
-              </div>
+                methodId={m.id}
+                rowNumber={idx}
+                isExpanded={expandedId === m.id}
+                onToggle={() => dispatch({ type: 'V264_TOGGLE_RECOMMENDATION', payload: m.id })}
+                activeTab={state.v264.recommendationTabs[m.id] || 'code'}
+                onTabChange={(tab) =>
+                  dispatch({ type: 'V264_SET_RECOMMENDATION_TAB', payload: { methodId: m.id, tab } })
+                }
+              />
             );
-          })}
-        </div>
-      )}
+          }
+
+          // Regular unoptimized row — unchanged behavior
+          const isSelected = state.selectedMethods.includes(m.id);
+          const wouldExceed =
+            !isSelected && state.selectedMethods.length >= MAX_METHODS_PER_RUN;
+          return (
+            <div
+              key={m.id}
+              className={`flex items-center gap-3 px-4 py-2.5 border-b border-gray-100 transition-colors ${
+                isSelected ? 'bg-blue-50/60' : 'hover:bg-gray-50'
+              }`}
+            >
+              <input
+                type="checkbox"
+                checked={isSelected}
+                disabled={runActive || wouldExceed}
+                onChange={() => dispatch({ type: 'TOGGLE_METHOD', payload: m.id })}
+                className="w-4 h-4 rounded border-sf-border text-sf-blue focus:ring-sf-blue/30 cursor-pointer accent-sf-blue disabled:cursor-not-allowed disabled:opacity-50"
+                title={wouldExceed ? `You can select up to ${MAX_METHODS_PER_RUN} methods per run` : ''}
+              />
+              <span className="text-[13px] text-sf-text-secondary w-6 text-right">{idx}.</span>
+              <code className="text-[12px] text-sf-text font-mono flex-1 truncate">
+                {m.name}{m.signature ? `_${m.signature}` : ''}
+              </code>
+              {m.recommended && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-[10px] font-medium border border-amber-200">
+                  Recommended
+                </span>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -796,93 +813,11 @@ function V264NewCallout() {
 }
 
 // ────────────────────────────────────────────────────────────────────
-// ApexEvolve Recommendations section — appears above the method list after a completed run.
-// Cards are styled to match the existing "Code Recommendations" surface in ApexGuru, with the
-// accordion behavior enforcing only one card expanded at a time.
-
-function V264RecommendationsSection() {
-  const { state, dispatch } = useApp();
-  const persistedMap = state.v264.persistedRecommendations;
-  const persistedIds = Object.keys(persistedMap);
-
-  // Render when there's ANY persisted recommendation (from this or a prior session) OR when
-  // the current run has completed. This means the section survives page refreshes, showing
-  // the user's cumulative set of ApexEvolve-optimized methods.
-  if (persistedIds.length === 0) return null;
-
-  // Sort by optimizedAt descending so newest appears first.
-  const sortedIds = [...persistedIds].sort((a, b) => {
-    const aTs = new Date(persistedMap[a].optimizedAt).getTime();
-    const bTs = new Date(persistedMap[b].optimizedAt).getTime();
-    return bTs - aTs;
-  });
-
-  const expandedId = state.v264.expandedRecommendationId;
-
-  return (
-    <div className="px-6 pt-4">
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
-          <Lightbulb className="w-4 h-4 text-sf-blue" />
-          <h2 className="text-[14px] font-semibold text-sf-text">
-            ApexEvolve Recommendations
-          </h2>
-          <span className="text-[12px] text-sf-text-secondary">({sortedIds.length})</span>
-        </div>
-        <div className="flex items-center gap-3 text-[11px]">
-          <p className="text-sf-text-secondary">
-            Click a card to see the rationale, code comparison, and scores.
-          </p>
-          {/* Dev/demo utility — clears all persisted recommendations so stakeholders can
-              re-run the demo without opening DevTools. Intentionally subtle. */}
-          <button
-            onClick={() => {
-              if (window.confirm('Clear all persisted ApexEvolve recommendations? This resets the demo.')) {
-                dispatch({ type: 'V264_CLEAR_PERSISTED' });
-              }
-            }}
-            className="text-sf-text-secondary hover:text-sf-blue hover:underline cursor-pointer"
-            title="Demo utility — reset persisted recommendations"
-          >
-            Reset
-          </button>
-        </div>
-      </div>
-
-      {/* Persistence note — explains the 30-day cache behavior so customers don't think
-          their work will disappear mid-review. */}
-      <div className="flex items-start gap-1.5 text-[11px] text-sf-text-secondary mb-3 leading-relaxed">
-        <Clock className="w-3 h-3 mt-0.5 flex-shrink-0" />
-        <span>
-          Recommendations are cached for <strong className="text-sf-text">30 days</strong> from the optimization date.
-          After that, click <strong className="text-sf-text">Re-evolve</strong> to generate a fresh recommendation.
-        </span>
-      </div>
-
-      <div>
-        {sortedIds.map((mid) => (
-          <V264RecommendationCard
-            key={mid}
-            methodId={mid}
-            isExpanded={expandedId === mid}
-            onToggle={() => dispatch({ type: 'V264_TOGGLE_RECOMMENDATION', payload: mid })}
-            activeTab={state.v264.recommendationTabs[mid] || 'code'}
-            onTabChange={(tab) =>
-              dispatch({ type: 'V264_SET_RECOMMENDATION_TAB', payload: { methodId: mid, tab } })
-            }
-          />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// ────────────────────────────────────────────────────────────────────
 // Content body — renders the Expensive Methods tab (selected by default) with the lean pilot UX.
 // Other tabs show a neutral placeholder matching the A/B demo pattern.
 
 function V264ExpensiveMethodsBody() {
-  const { dispatch } = useApp();
+  const { state, dispatch } = useApp();
 
   // Mark the tab as visited (used by the coachmark popover's dismissal logic to know the user
   // has at least seen the Expensive Methods tab).
@@ -890,58 +825,68 @@ function V264ExpensiveMethodsBody() {
     dispatch({ type: 'V264_MARK_EXPENSIVE_TAB_VISITED' });
   }, [dispatch]);
 
+  const hasPersisted = Object.keys(state.v264.persistedRecommendations).length > 0;
+
   return (
     <>
       <V264StatusBar />
 
-      {/* The action bar sits at the very top of the tab body, ABOVE the recommendations
-          section. Rationale: even after the user has optimized some methods, they should
-          still be one click away from optimizing more. Keeping the CTA at the top means
-          a returning user sees (1) their prior recommendations (further down) and
-          (2) the invitation to optimize additional methods (right here) without scrolling. */}
+      {/* Action bar — pinned at top of the tab body. Even after some methods have
+          ApexEvolve recommendations (rendered inline in the list below), the user
+          is always one click away from optimizing more. */}
       <div className="px-6 pt-4">
         <V264ActionBar onOpenModal={() => dispatch({ type: 'SHOW_MODAL', payload: 'v264-optimize' })} />
       </div>
 
-      <V264RecommendationsSection />
+      {/* Method list — Critical and Expensive tiers in original order. Optimized methods
+          render inline as expandable insight rows within their tier (at their original
+          position) rather than in a separate section. */}
+      <div className="px-6 pt-4">
+        {/* Persistence + reset meta-line. Only surfaces when there's ≥1 persisted recommendation —
+            otherwise it's noise for a first-time user. */}
+        {hasPersisted && (
+          <div className="flex items-center justify-between text-[11px] text-sf-text-secondary mb-2 leading-relaxed px-1">
+            <div className="flex items-start gap-1.5">
+              <Clock className="w-3 h-3 mt-0.5 flex-shrink-0" />
+              <span>
+                ApexEvolve recommendations are cached for <strong className="text-sf-text">30 days</strong> from the optimization date.
+                Use <strong className="text-sf-text">Re-evolve</strong> on any optimized row to refresh.
+              </span>
+            </div>
+            {/* Dev/demo utility — clears persisted recs so stakeholders can re-run the demo
+                without opening DevTools. Intentionally subtle. */}
+            <button
+              onClick={() => {
+                if (window.confirm('Clear all persisted ApexEvolve recommendations? This resets the demo.')) {
+                  dispatch({ type: 'V264_CLEAR_PERSISTED' });
+                }
+              }}
+              className="text-sf-text-secondary hover:text-sf-blue hover:underline cursor-pointer"
+              title="Demo utility — reset persisted recommendations"
+            >
+              Reset
+            </button>
+          </div>
+        )}
 
-      <V264MethodLists />
-    </>
-  );
-}
-
-// Wrapper that computes startIndex per-group based on how many methods are actually
-// visible (unoptimized) in the preceding group — not the full total. This keeps the
-// row numbering sequential without gaps after we filter out optimized methods.
-function V264MethodLists() {
-  const { state } = useApp();
-  const currentRunOptimized = new Set(
-    state.v264.run?.status === 'ready' ? state.v264.run.methodIds : []
-  );
-  const persistedMap = state.v264.persistedRecommendations;
-  const isOpt = (m) => currentRunOptimized.has(m.id) || !!persistedMap[m.id];
-
-  const visibleCritical = CRITICAL_METHODS.filter((m) => !isOpt(m));
-
-  return (
-    <div className="px-6 py-4">
-      <div className="bg-white rounded-lg border border-sf-border shadow-sm">
-        <V264MethodGroup
-          title="Critical Expensive Methods"
-          methods={CRITICAL_METHODS}
-          icon={AlertOctagon}
-          iconColor="text-sf-error"
-          startIndex={0}
-        />
-        <V264MethodGroup
-          title="Expensive Methods"
-          methods={EXPENSIVE_METHODS}
-          icon={AlertTriangle}
-          iconColor="text-sf-warning"
-          startIndex={visibleCritical.length}
-        />
+        <div className="bg-white rounded-lg border border-sf-border shadow-sm">
+          <V264MethodGroup
+            title="Critical Expensive Methods"
+            methods={CRITICAL_METHODS}
+            icon={AlertOctagon}
+            iconColor="text-sf-error"
+            startIndex={0}
+          />
+          <V264MethodGroup
+            title="Expensive Methods"
+            methods={EXPENSIVE_METHODS}
+            icon={AlertTriangle}
+            iconColor="text-sf-warning"
+            startIndex={CRITICAL_METHODS.length}
+          />
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 
