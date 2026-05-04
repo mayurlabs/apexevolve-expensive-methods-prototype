@@ -195,9 +195,11 @@ function reducer(state, action) {
       // Accordion: clicking the currently-expanded card closes it; clicking a different one opens that.
       const current = state.v264.expandedRecommendationId;
       const next = current === action.payload ? null : action.payload;
-      // Ensure a default sub-tab is set when first expanding a card.
+      // Ensure a default sub-tab is set when first expanding a card. Default is 'code'
+      // (Code comparison) per stakeholder direction — reviewers want to see the concrete
+      // delta first, then Scores, then the narrative "Why this change" last.
       const tabs = { ...state.v264.recommendationTabs };
-      if (next && !tabs[next]) tabs[next] = 'why';
+      if (next && !tabs[next]) tabs[next] = 'code';
       return { ...state, v264: { ...state.v264, expandedRecommendationId: next, recommendationTabs: tabs } };
     }
     case 'V264_SET_RECOMMENDATION_TAB':
